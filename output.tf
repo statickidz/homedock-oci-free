@@ -3,7 +3,7 @@ output "homedock_dashboard" {
 }
 
 output "homedock_auth" {
-  value = "Username: user | Password: passwd"
+  value = "Username: user | Password: passwd (change it after first login)"
 }
 
 output "homedock_note" {

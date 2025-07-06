@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sleep 15
+
 # Ensure we're running as root
 if [ "$EUID" -ne 0 ]; then
     exec sudo "$0" "$@"

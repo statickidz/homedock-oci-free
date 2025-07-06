@@ -1,7 +1,5 @@
 #!/bin/bash
 
-sleep 15
-
 # Ensure we're running as root
 if [ "$EUID" -ne 0 ]; then
     exec sudo "$0" "$@"
@@ -33,6 +31,9 @@ iptables --flush
 
 # Save iptables rules
 netfilter-persistent save
+
+# Wait for 15 seconds
+sleep 15
 
 # Install HomeDock
 curl -fsSL https://get.homedock.cloud | sudo bash

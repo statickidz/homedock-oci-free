@@ -1,34 +1,34 @@
 #!/bin/bash
 
-# # Add ubuntu SSH authorized keys to the root user
-# mkdir -p /root/.ssh
-# cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/
-# chown root:root /root/.ssh/authorized_keys
-# chmod 600 /root/.ssh/authorized_keys
+# Run as root
+sudo -i
 
-# # Add ubuntu user to sudoers
-# echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+# Add ubuntu SSH authorized keys to the root user
+mkdir -p /root/.ssh
+cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/
+chown root:root /root/.ssh/authorized_keys
+chmod 600 /root/.ssh/authorized_keys
 
-# # OpenSSH
-# apt install -y openssh-server
-# systemctl status sshd
+# Add ubuntu user to sudoers
+echo "ubuntu ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# # Permit root login
-# sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-# systemctl restart sshd
+# OpenSSH
+apt install -y openssh-server
+systemctl status sshd
 
-# # Allow HTTP and HTTPS traffic
-# ufw allow 80,443/tcp
+# Permit root login
+sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+systemctl restart sshd
 
-# # Allow all traffic
-# iptables -P INPUT ACCEPT
-# iptables -P OUTPUT ACCEPT
-# iptables -P FORWARD ACCEPT
-# iptables -F
-# iptables --flush
+# Allow all traffic
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -F
+iptables --flush
 
-# # Save iptables rules
-# netfilter-persistent save
+# Save iptables rules
+netfilter-persistent save
 
-# # Install HomeDock
-# curl -fsSL https://get.homedock.cloud | sudo bash
+# Install HomeDock
+curl -fsSL https://get.homedock.cloud | sudo bash

@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Run as root
-sudo -i
+# Ensure we're running as root
+if [ "$EUID" -ne 0 ]; then
+    exec sudo "$0" "$@"
+fi
 
 # Add ubuntu SSH authorized keys to the root user
 mkdir -p /root/.ssh

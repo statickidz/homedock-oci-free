@@ -17,9 +17,6 @@ systemctl status sshd
 sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 systemctl restart sshd
 
-# Install HomeDock
-curl -fsSL https://get.homedock.cloud | sudo bash
-
 # Allow HTTP and HTTPS traffic
 ufw allow 80,443/tcp
 
@@ -32,3 +29,6 @@ iptables --flush
 
 # Save iptables rules
 netfilter-persistent save
+
+# Install HomeDock
+curl -fsSL https://get.homedock.cloud | sudo sh

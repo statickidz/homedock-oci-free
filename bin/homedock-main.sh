@@ -31,4 +31,4 @@ iptables --flush
 netfilter-persistent save
 
 # Install HomeDock
-curl -fsSL https://get.homedock.cloud | sudo sh
+curl -fsSL https://get.homedock.cloud | sudo bash

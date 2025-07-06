@@ -5,6 +5,14 @@ if [ "$EUID" -ne 0 ]; then
     exec sudo "$0" "$@"
 fi
 
+# Check if the /opt/ directory exists
+if [ ! -d "/opt/" ]; then
+    mkdir -p /opt/
+fi
+
+# Change to the /opt/ directory
+cd /opt/
+
 # Add ubuntu SSH authorized keys to the root user
 mkdir -p /root/.ssh
 cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/
@@ -31,9 +39,6 @@ iptables --flush
 
 # Save iptables rules
 netfilter-persistent save
-
-# Wait for 15 seconds
-sleep 15
 
 # Install HomeDock
 curl -fsSL https://get.homedock.cloud | sudo bash

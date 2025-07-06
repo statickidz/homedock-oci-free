@@ -1,9 +1,11 @@
 output "homedock_dashboard" {
-  value = join("\n", [
-    "HomeDock Dashboard URL: http://${oci_core_instance.homedock_main.public_ip}",
-    "Username: user",
-    "Password: passwd",
-    "",
-    "Note: Wait 5-10 minutes for HomeDock installation to complete before accessing."
-  ])
+  value = "http://${oci_core_instance.homedock_main.public_ip}"
+}
+
+output "homedock_auth" {
+  value = "Username: user | Password: passwd"
+}
+
+output "homedock_note" {
+  value = "Note: Wait 5-10 minutes for HomeDock installation to complete before accessing."
 }

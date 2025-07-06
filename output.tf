@@ -4,6 +4,6 @@ output "homedock_dashboard" {
     "Username: user",
     "Password: passwd",
     "",
-    "Note: Wait 3-5 minutes for HomeDock installation to complete before accessing."
+    "Note: Wait 5-10 minutes for HomeDock installation to complete before accessing."
   ])
 }

@@ -1,8 +1,8 @@
-output "homedock_dashboard" {
+output "homedock_dashboard_url" {
   value = "http://${oci_core_instance.homedock_main.public_ip}"
 }
 
-output "homedock_auth" {
+output "homedock_credentials" {
   value = "Username: user | Password: passwd (change it after first login)"
 }
 

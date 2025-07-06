@@ -18,21 +18,17 @@ sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd
 systemctl restart sshd
 
 # Install HomeDock
-curl -sSL https://homedock.com/install.sh | sh
+curl -fsSL https://get.homedock.cloud | sudo bash
 
-# Allow Docker Swarm traffic
-ufw allow 80,443,3000,996,7946,4789,2377/tcp
-ufw allow 7946,4789,2377/udp
+# Allow HTTP and HTTPS traffic
+ufw allow 80,443/tcp
 
-iptables -I INPUT 1 -p tcp --dport 2377 -j ACCEPT
-iptables -I INPUT 1 -p udp --dport 7946 -j ACCEPT
-iptables -I INPUT 1 -p tcp --dport 7946 -j ACCEPT
-iptables -I INPUT 1 -p udp --dport 4789 -j ACCEPT
+# Allow all traffic
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -F
+iptables --flush
 
-# Reorder FORWARD chain rules:
-# Remove the default REJECT rule (ignore error if not found)
-iptables -D FORWARD -j REJECT --reject-with icmp-host-prohibited || true
-# Append the REJECT rule at the end so that Docker rules can be matched first
-iptables -A FORWARD -j REJECT --reject-with icmp-host-prohibited
-
+# Save iptables rules
 netfilter-persistent save

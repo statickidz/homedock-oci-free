@@ -13,19 +13,8 @@ variable "source_image_id" {
   type        = string
 }
 
-variable "num_worker_instances" {
-  description = "Number of HomeDock worker instances to deploy (max 3 for free tier)."
-  type        = number
-  default     = 1
-}
-
 variable "availability_domain_main" {
   description = "Availability domain for homedock-main instance. Find it Core Infrastructure → Compute → Instances → Availability domain (left menu). For example: WBJv:EU-FRANKFURT-1-AD-1"
-  type        = string
-}
-
-variable "availability_domain_workers" {
-  description = "Availability domain for homedock-main instance. Find it Core Infrastructure → Compute → Instances → Availability domain (left menu). For example: WBJv:EU-FRANKFURT-1-AD-2"
   type        = string
 }
 
@@ -36,13 +25,13 @@ variable "instance_shape" {
 }
 
 variable "memory_in_gbs" {
-  description = "Memory in GBs for instance shape config. 6 GB is the maximum for free tier with 3 working nodes."
+  description = "Memory in GBs for instance shape config. OCI Free Tier provides 24 GB RAM total across all VM.Standard.A1.Flex instances. You can allocate this however you like - e.g., one big instance with all 24 GB, or multiple VMs like 2×(12 GB), 3×(8 GB), 4×(6 GB each), etc. - as long as the sum across all A1 Flex instances stays within 24 GB RAM."
   type        = string
-  default     = "6" # OCI Free
+  default     = "24" # OCI Free
 }
 
 variable "ocpus" {
-  description = "OCPUs for instance shape config. 1 OCPU is the maximum for free tier with 3 working nodes."
+  description = "OCPUs for instance shape config. OCI Free Tier provides 4 OCPUs total across all VM.Standard.A1.Flex instances. You can allocate this however you like - e.g., one big instance with all 4 OCPUs, or multiple VMs like 2×(2 OCPUs), 3×(1+1+2), 4×(1 OCPU each), etc. - as long as the sum across all A1 Flex instances stays within 4 OCPUs."
   type        = string
-  default     = "1" # OCI Free
+  default     = "4" # OCI Free
 }

@@ -1,7 +1,9 @@
 output "homedock_dashboard" {
-  value = "http://${oci_core_instance.homedock_main.public_ip}:3000/ (wait 3-5 minutes to finish HomeDock installation)"
-}
+  value = <<-EOT
+    HomeDock Dashboard URL: http://${oci_core_instance.homedock_main.public_ip}/
+    Username: user
+    Password: passwd
 
-output "homedock_worker_ips" {
-  value = [for instance in oci_core_instance.homedock_worker : "${instance.public_ip} (use it to add the server in HomeDock Dashboard)"]
+    Note: Wait 3-5 minutes for HomeDock installation to complete before accessing.
+  EOT
 }

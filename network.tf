@@ -44,147 +44,15 @@ resource "oci_core_security_list" "homedock_security_list" {
   vcn_id         = oci_core_vcn.homedock_vcn.id
   display_name   = "HomeDock Security List"
 
-  # Ingress Rules for HomeDock
+  # Allow all ingress traffic
   ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 3000
-      max = 3000
-    }
-    description = "Allow HTTP traffic for HomeDock on port 3000"
-  }
-
-  # SSH
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 22
-      max = 22
-    }
-    description = "Allow SSH traffic on port 22"
-  }
-
-  # HTTP & HTTPS traffic
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 80
-      max = 80
-    }
-    description = "Allow HTTP traffic on port 80"
-  }
-
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 443
-      max = 443
-    }
-    description = "Allow HTTPS traffic on port 443"
-  }
-
-  # ICMP traffic
-  ingress_security_rules {
-    description = "ICMP traffic for 3, 4"
-    icmp_options {
-      code = "4"
-      type = "3"
-    }
-    protocol    = "1"
+    protocol    = "all"
     source      = "0.0.0.0/0"
     source_type = "CIDR_BLOCK"
-    stateless   = "false"
+    description = "Allow all ingress traffic"
   }
 
-  ingress_security_rules {
-    description = "ICMP traffic for 3"
-    icmp_options {
-      code = "-1"
-      type = "3"
-    }
-    protocol    = "1"
-    source      = "10.0.0.0/16"
-    source_type = "CIDR_BLOCK"
-    stateless   = "false"
-  }
-
-  # Traefik Proxy
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 81
-      max = 81
-    }
-    description = "Allow Traefik HTTP traffic on port 81"
-  }
-
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 444
-      max = 444
-    }
-    description = "Allow Traefik HTTPS traffic on port 444"
-  }
-
-  # Ingress rules for Docker Swarm
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 2376
-      max = 2376
-    }
-    description = "Allow Docker Swarm traffic on port 2376"
-  }
-
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 2377
-      max = 2377
-    }
-    description = "Allow Docker Swarm traffic on port 2377"
-  }
-
-  ingress_security_rules {
-    protocol = "6" # TCP
-    source   = "0.0.0.0/0"
-    tcp_options {
-      min = 7946
-      max = 7946
-    }
-    description = "Allow Docker Swarm traffic on port 7946"
-  }
-
-  ingress_security_rules {
-    protocol = "17" # UDP
-    source   = "0.0.0.0/0"
-    udp_options {
-      min = 7946
-      max = 7946
-    }
-    description = "Allow Docker Swarm UDP traffic on port 7946"
-  }
-
-  ingress_security_rules {
-    protocol = "17" # UDP
-    source   = "0.0.0.0/0"
-    udp_options {
-      min = 4789
-      max = 4789
-    }
-    description = "Allow Docker Swarm UDP traffic on port 4789"
-  }
-
-  # Egress Rule (optional, if needed)
+  # Egress Rule (allow all outbound traffic)
   egress_security_rules {
     protocol    = "all"
     destination = "0.0.0.0/0"

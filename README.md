@@ -100,8 +100,8 @@ After deployment completes (5-10 minutes), you'll receive:
 
 For detailed HomeDock usage instructions:
 
-- **Official Website**: [homedock.com](https://homedock.com)
-- **Documentation**: [docs.homedock.com](https://docs.homedock.com)
+- **Official Website**: [homedock.cloud](https://www.homedock.cloud/)
+- **Documentation**: [docs.homedock.cloud](https://docs.homedock.cloud/)
 - **GitHub**: [github.com/BansheeTech/HomeDockOS](https://github.com/BansheeTech/HomeDockOS)
 
 ## 🔍 Troubleshooting
@@ -176,4 +176,4 @@ Found an issue or have a suggestion? Please:
 
 **Happy Deploying! 🚀**
 
-For support, visit [homedock.com](https://homedock.com) or join the [HomeDock community](https://github.com/homedock).
+For support, visit [homedock.cloud](https://www.homedock.cloud/) or join the [HomeDock community](https://github.com/BansheeTech/HomeDockOS).

@@ -1,90 +1,201 @@
-# HomeDock Deployment on OCI Free Tier
+# HomeDock on Oracle Cloud Infrastructure (OCI) Free Tier
 
-This Terraform project deploys a HomeDock instance along with worker nodes in Oracle Cloud Infrastructure (OCI) Free Tier. **HomeDock** is an open-source platform to manage your app deployments and server configurations.
+![HomeDock Logo](doc/homedock-logo.png)
 
-## Deploy
+Deploy **HomeDock** - an open-source deployment platform - on Oracle Cloud Infrastructure using the Free Tier. This Terraform project sets up a complete HomeDock environment with proper networking and security configurations.
 
 [![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/statickidz/homedock-oci-free/archive/refs/heads/main.zip)
 
-_Clicking the "Deploy to Oracle Cloud" button will load the Oracle Cloud Resource Manager to deploy the infrastructure described in this Terraform project. During deployment, you'll be prompted to configure the stack parameters. Review the settings, then launch the stack deployment._
+![HomeDock Screenshot](doc/homedock-screenshot.webp)
 
-## About HomeDock
+## 🚀 Quick Start
 
-![HomeDock Logo](doc/homedock-logo.webp)
+1. **Click "Deploy to Oracle Cloud"** above
+2. **Configure your deployment** with the required parameters
+3. **Wait 5-10 minutes** for HomeDock to install
+4. **Access your HomeDock dashboard** using the provided URL and credentials
 
-HomeDock is an open-source deployment tool designed to simplify the management of servers, applications, and databases on your own infrastructure with minimal setup. It streamlines CI/CD pipelines, ensuring easy and consistent deployments.
+## 📋 Prerequisites
 
-For more information, visit the official page at [homedock.com](https://homedock.com).
+Before deploying, ensure you have:
 
-![HomeDock Screenshot](doc/homedock-screenshot.png)
+- ✅ **OCI Account**: An Oracle Cloud Infrastructure account with Free Tier access
+- ✅ **SSH Key Pair**: Generate an SSH key pair for secure instance access
+- ✅ **Compartment ID**: Your OCI compartment identifier
+- ✅ **Ubuntu Image ID**: Ubuntu 22.04 image OCID for your region
 
-## OCI Free Tier Overview
+## 🏗️ What Gets Deployed
 
-Oracle Cloud Infrastructure (OCI) offers a Free Tier with resources ideal for light workloads, such as the VM.Standard.E2.1.Micro instance. These resources are free as long as usage remains within the limits.
+This Terraform configuration creates:
 
-For detailed information about the free tier, visit [OCI Free Tier](https://www.oracle.com/cloud/free/).
+- **1 HomeDock Instance**: VM.Standard.A1.Flex with 24GB RAM and 4 OCPUs
+- **Virtual Cloud Network (VCN)**: Complete networking infrastructure
+- **Security Lists**: Configured for HomeDock access
+- **Internet Gateway**: For external connectivity
+- **Subnet**: Properly configured for the HomeDock instance
 
-_Note: Free Tier instances are subject to availability, and you might encounter "Out of Capacity" errors. To bypass this, upgrade to a paid account. This keeps your free-tier benefits but removes the capacity limitations, ensuring access to higher-tier resources if needed._
+## ⚙️ Configuration Parameters
 
-## Prerequisites
+When deploying, you'll need to provide:
 
-Before you begin, ensure you have the following:
+| Parameter                  | Description             | Example                                   |
+| -------------------------- | ----------------------- | ----------------------------------------- |
+| `ssh_authorized_keys`      | Your SSH public key     | `ssh-rsa AAEAAAA...3R ssh-key-2024-09-03` |
+| `compartment_id`           | OCI compartment OCID    | `ocid1.compartment.oc1..aaaa...`          |
+| `source_image_id`          | Ubuntu 22.04 image OCID | `ocid1.image.oc1.eu-frankfurt-1...`       |
+| `availability_domain_main` | Availability domain     | `WBJv:EU-FRANKFURT-1-AD-1`                |
 
-- An Oracle Cloud Infrastructure (OCI) account with Free Tier resources available.
-- An SSH public key for accessing the instances.
+### Finding Your Values
 
-## Servers & Cluster
+#### SSH Public Key
 
-### Add Servers to HomeDock
+```bash
+# Generate a new key pair
+ssh-keygen -t rsa -b 4096 -C "your-email@example.com"
 
-To begin deploying applications, you need to add servers to your HomeDock cluster. A server in HomeDock is where your applications will be deployed and managed.
+# Display your public key
+cat ~/.ssh/id_rsa.pub
+```
 
-#### Steps to Add Servers:
+#### Compartment ID
 
-1.  **Login to HomeDock Dashboard**:
-    - Access the HomeDock dashboard via the main instance's public IP address. You'll need to use the login credentials configured during setup.
-1.  **Generate SSH Keys**:
-    - On the left-hand menu, click on "SSH Keys" and add your private and public SSH key to connect your server.
-1.  **Navigate to Servers Section**:
-    - On the left-hand menu, click on "Servers" and then "Add Server."
-1.  **Fill in Server Details**:
-    - **Server Name**: Give your server a meaningful name.
-    - **IP Address**: Enter the public IP address of the instance. If you’re using private networking, you can enter the private IP address instead.
-    - **SSH Key**: Select the previous created SSH key.
-    - **Username**: The SSH user for connecting to the server, use `root`.
-1.  **Submit**:
-    - After filling out the necessary fields, click "Submit" to add the server.
+1. Go to [OCI Console](https://cloud.oracle.com)
+2. Navigate to **Profile** → **Tenancy: [your-username]**
+3. Click **Tenancy Information**
+4. Copy the **OCID** value
 
-### Configure a HomeDock Cluster with new workers
+#### Ubuntu Image ID
 
-After setting up the main HomeDock instance, you can expand your cluster by adding worker nodes. These worker instances will help distribute the workload for your deployments.
+1. Visit [Oracle Linux Images](https://docs.oracle.com/en-us/iaas/images/image/128dbc42-65a9-4ed0-a2db-be7aa584c726/index.htm)
+2. Find Ubuntu 22.04 for your region
+3. Copy the **OCID** value
 
-See more info about configuring your cluster on the [HomeDock Cluster Docs](https://docs.homedock.com/docs/core/cluster).
+#### Availability Domain
 
-## Project Structure
+1. In OCI Console, go to **Core Infrastructure** → **Compute** → **Instances**
+2. Click **Create Instance**
+3. Note the availability domain from the dropdown (e.g., `WBJv:EU-FRANKFURT-1-AD-1`)
 
-- `bin/`: Contains bash scripts for setting up HomeDock on both the main instance and the worker instances.
-  - `homedock-main.sh`: Script to install HomeDock on the main instance.
-  - `homedock-worker.sh`: Script to configure necessary dependencies on worker instances.
-- `helper.tf`: Contains helper functions and reusable modules to streamline the infrastructure setup.
-- `doc/`: Directory for images used in the README (e.g., screenshots of HomeDock setup).
-- `locals.tf`: Defines local values used throughout the Terraform configuration, such as dynamic values or reusable expressions.
-- `main.tf`: Core Terraform configuration file that defines the infrastructure for HomeDock's main and worker instances.
-- `network.tf`: Configuration for setting up the required OCI networking resources (VCNs, subnets, security lists, etc.).
-- `output.tf`: Specifies the output variables such as the IP addresses for the dashboard and worker nodes.
-- `providers.tf`: Declares the required cloud providers and versions, particularly for Oracle Cloud Infrastructure.
-- `README.md`: This file, providing instructions on deployment and usage.
-- `variables.tf`: Defines input variables used in the project, including compartment ID, SSH keys, instance shape, and more.
+## 🔧 Post-Deployment Setup
 
-## Terraform Variables
+### 1. Access HomeDock Dashboard
 
-Below are the key variables for deployment which are defined in `variables.tf`:
+After deployment completes (5-10 minutes), you'll receive:
 
-- `ssh_authorized_keys`: Your SSH public key for accessing the instances.
-- `compartment_id`: OCI compartment ID for instance deployment.
-- `num_worker_instances`: Number of worker instances to deploy for HomeDock.
-- `availability_domain_main`: Availability domain for the main instance.
-- `availability_domain_workers`: Availability domains for worker instances.
-- `instance_shape`: Instance shape (e.g., VM.Standard.E2.1.Micro) used for deployment.
-- `memory_in_gbs`: Memory size (GB) per instance.
-- `ocpus`: Number of OCPUs per instance.
+- **Dashboard URL**: `http://[YOUR_INSTANCE_IP]`
+- **Default Credentials**:
+  - Username: `user`
+  - Password: `passwd`
+
+**⚠️ Important**: Change the default password immediately after first login!
+
+### 2. Add Your First Server
+
+1. **Login to HomeDock Dashboard**
+2. **Navigate to SSH Keys** (left menu)
+   - Add your private and public SSH keys
+3. **Go to Servers** → **Add Server**
+4. **Configure Server Details**:
+   - **Server Name**: Choose a meaningful name
+   - **IP Address**: Use the public IP of your OCI instance
+   - **SSH Key**: Select the key you added
+   - **Username**: `root`
+5. **Click Submit**
+
+### 3. Deploy Your First Application
+
+1. **Create a New Project** in HomeDock
+2. **Connect your Git repository**
+3. **Configure deployment settings**
+4. **Deploy!**
+
+## 🌐 Networking & Security
+
+The deployment includes:
+
+- **VCN**: `10.0.0.0/16` with subnet `10.0.0.0/24`
+- **Security List**: Allows all ingress/egress traffic (configure as needed)
+- **Internet Gateway**: Enables external connectivity
+- **Public IP**: Automatically assigned to the HomeDock instance
+
+## 📚 HomeDock Documentation
+
+For detailed HomeDock usage instructions:
+
+- **Official Website**: [homedock.com](https://homedock.com)
+- **Documentation**: [docs.homedock.com](https://docs.homedock.com)
+- **GitHub**: [github.com/BansheeTech/HomeDockOS](https://github.com/BansheeTech/HomeDockOS)
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**"Out of Capacity" Error**
+
+- Free Tier instances have limited availability
+- Solution: Upgrade to a paid account (keeps free tier benefits)
+
+**HomeDock Not Accessible**
+
+- Wait 5-10 minutes for installation to complete
+- Check instance status in OCI Console
+- Verify security list allows HTTP traffic
+
+**SSH Connection Issues**
+
+- Ensure your SSH key is correctly added
+- Use `root` as the username
+- Check instance is running and has public IP
+
+### Logs & Debugging
+
+SSH into your instance to check logs:
+
+```bash
+ssh root@[YOUR_INSTANCE_IP]
+tail -f /var/log/homedock-install.log
+```
+
+## 🏗️ Project Structure
+
+```
+homedock-oci-free/
+├── bin/
+│   └── homedock-main.sh          # HomeDock installation script
+├── doc/
+│   ├── homedock-logo.webp        # HomeDock logo
+│   └── homedock-screenshot.png   # Dashboard screenshot
+├── main.tf                       # Main instance configuration
+├── network.tf                    # VCN, subnet, security configuration
+├── variables.tf                  # Input variables
+├── locals.tf                     # Local values and configurations
+├── output.tf                     # Output values (URLs, credentials)
+├── providers.tf                  # OCI provider configuration
+├── helper.tf                     # Helper resources
+└── README.md                     # This file
+```
+
+## 💰 OCI Free Tier Limits
+
+This deployment uses:
+
+- **VM.Standard.A1.Flex**: 24GB RAM, 4 OCPUs
+- **Storage**: Included with instance
+- **Networking**: VCN, subnet, internet gateway
+
+**Note**: Free Tier resources are subject to availability. Consider upgrading to a paid account for production use.
+
+## 🤝 Contributing
+
+Found an issue or have a suggestion? Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+---
+
+**Happy Deploying! 🚀**
+
+For support, visit [homedock.com](https://homedock.com) or join the [HomeDock community](https://github.com/homedock).

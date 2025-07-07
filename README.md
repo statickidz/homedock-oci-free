@@ -89,34 +89,12 @@ After deployment completes (5-10 minutes), you'll receive:
 
 **⚠️ Important**: Change the default password immediately after first login!
 
-### 2. Add Your First Server
+### 2. Deploy your first app
 
-1. **Login to HomeDock Dashboard**
-2. **Navigate to SSH Keys** (left menu)
-   - Add your private and public SSH keys
-3. **Go to Servers** → **Add Server**
-4. **Configure Server Details**:
-   - **Server Name**: Choose a meaningful name
-   - **IP Address**: Use the public IP of your OCI instance
-   - **SSH Key**: Select the key you added
-   - **Username**: `root`
-5. **Click Submit**
-
-### 3. Deploy Your First Application
-
-1. **Create a New Project** in HomeDock
-2. **Connect your Git repository**
-3. **Configure deployment settings**
-4. **Deploy!**
-
-## 🌐 Networking & Security
-
-The deployment includes:
-
-- **VCN**: `10.0.0.0/16` with subnet `10.0.0.0/24`
-- **Security List**: Allows all ingress/egress traffic (configure as needed)
-- **Internet Gateway**: Enables external connectivity
-- **Public IP**: Automatically assigned to the HomeDock instance
+1. From the HomeDock dashboard, click "App Store"
+2. Choose from the app catalog
+3. Click "Install" and wait for the installation
+4. Access your app
 
 ## 📚 HomeDock Documentation
 

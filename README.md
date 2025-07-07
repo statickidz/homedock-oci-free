@@ -6,14 +6,14 @@ Deploy **HomeDock** - an open-source deployment platform - on Oracle Cloud Infra
 
 [![Deploy to Oracle Cloud](https://oci-resourcemanager-plugin.plugins.oci.oraclecloud.com/latest/deploy-to-oracle-cloud.svg)](https://cloud.oracle.com/resourcemanager/stacks/create?zipUrl=https://github.com/statickidz/homedock-oci-free/archive/refs/heads/main.zip)
 
-![HomeDock Screenshot](doc/homedock-screenshot.webp)
-
 ## 🚀 Quick Start
 
 1. **Click "Deploy to Oracle Cloud"** above
 2. **Configure your deployment** with the required parameters
 3. **Wait 5-10 minutes** for HomeDock to install
 4. **Access your HomeDock dashboard** using the provided URL and credentials
+
+![HomeDock Screenshot](doc/homedock-screenshot.webp)
 
 ## 📋 Prerequisites
 

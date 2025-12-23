@@ -193,9 +193,15 @@ PORT=80
 COMPLETION_PATTERN="HomeDock OS setup completed"
 
 # Function to handle HTTP request
+# Reads from stdin and writes response to stdout
 handle_request() {
-    local request_line
-    read -r request_line
+    # Read the request line
+    read -r request_line || return 1
+    
+    # Skip remaining headers (read until empty line)
+    while IFS= read -r line && [ -n "$line" ]; do
+        : # Skip headers
+    done
     
     # Parse request
     local method=$(echo "$request_line" | awk '{print $1}')
@@ -204,44 +210,33 @@ handle_request() {
     # Remove query string if present
     path=$(echo "$path" | cut -d'?' -f1)
     
-    if [ "$path" = "/" ] || [ "$path" = "" ]; then
+    # Send response (use printf for proper HTTP formatting)
+    if [ "$path" = "/" ] || [ -z "$path" ]; then
         # Serve HTML
-        {
-            echo "HTTP/1.1 200 OK"
-            echo "Content-Type: text/html; charset=utf-8"
-            echo "Connection: close"
-            echo ""
-            cat "$HTML_FILE"
-        }
+        printf "HTTP/1.1 200 OK\r\n"
+        printf "Content-Type: text/html; charset=utf-8\r\n"
+        printf "Connection: close\r\n"
+        printf "\r\n"
+        cat "$HTML_FILE"
     elif [ "$path" = "/logs" ]; then
         # Serve log content
+        printf "HTTP/1.1 200 OK\r\n"
+        printf "Content-Type: text/plain; charset=utf-8\r\n"
+        printf "Access-Control-Allow-Origin: *\r\n"
+        printf "Connection: close\r\n"
+        printf "\r\n"
         if [ -f "$LOG_FILE" ]; then
-            {
-                echo "HTTP/1.1 200 OK"
-                echo "Content-Type: text/plain; charset=utf-8"
-                echo "Access-Control-Allow-Origin: *"
-                echo "Connection: close"
-                echo ""
-                cat "$LOG_FILE"
-            }
+            cat "$LOG_FILE"
         else
-            {
-                echo "HTTP/1.1 200 OK"
-                echo "Content-Type: text/plain; charset=utf-8"
-                echo "Connection: close"
-                echo ""
-                echo "Log file not found yet..."
-            }
+            echo "Log file not found yet..."
         fi
     else
         # 404 Not Found
-        {
-            echo "HTTP/1.1 404 Not Found"
-            echo "Content-Type: text/plain"
-            echo "Connection: close"
-            echo ""
-            echo "404 Not Found"
-        }
+        printf "HTTP/1.1 404 Not Found\r\n"
+        printf "Content-Type: text/plain\r\n"
+        printf "Connection: close\r\n"
+        printf "\r\n"
+        echo "404 Not Found"
     fi
 }
 
@@ -284,23 +279,99 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
-# Simple HTTP server using netcat (preferred) or socat
-if command -v nc >/dev/null 2>&1; then
-    # Use netcat in a loop - each connection is handled and then we listen again
-    # Most netcat versions bind to all interfaces (0.0.0.0) by default with -l -p
-    echo "Using netcat to listen on port $PORT..." >&2
-    while true; do
-        # Listen for connection and handle it
-        # -l = listen, -p = port, -q 0 = quit after EOF (if supported)
-        nc -l -p $PORT 2>&1 | handle_request 2>&1
-        # If netcat exits, wait a moment and try again (unless we're being killed)
-        sleep 0.1
-    done
-elif command -v socat >/dev/null 2>&1; then
-    # Fallback to socat - create inline handler
-    socat TCP-LISTEN:$PORT,reuseaddr,fork SYSTEM:"bash -c 'read request_line; method=\$(echo \$request_line | awk \"{print \\\$1}\"); path=\$(echo \$request_line | awk \"{print \\\$2}\" | cut -d\"?\" -f1); if [ \"\$path\" = \"/\" ] || [ -z \"\$path\" ]; then echo -e \"HTTP/1.1 200 OK\\r\\nContent-Type: text/html; charset=utf-8\\r\\nConnection: close\\r\\n\\r\"; cat $HTML_FILE; elif [ \"\$path\" = \"/logs\" ]; then echo -e \"HTTP/1.1 200 OK\\r\\nContent-Type: text/plain; charset=utf-8\\r\\nAccess-Control-Allow-Origin: *\\r\\nConnection: close\\r\\n\\r\"; [ -f $LOG_FILE ] && cat $LOG_FILE || echo \"Log file not found yet...\"; else echo -e \"HTTP/1.1 404 Not Found\\r\\nContent-Type: text/plain\\r\\nConnection: close\\r\\n\\r\\n404 Not Found\"; fi'" 2>/dev/null
+# Simple HTTP server - use the most reliable method available
+# Priority: socat > netcat with exec > pure bash /dev/tcp
+
+# Create handler function as a separate script for execution
+HANDLER_SCRIPT="/tmp/http-handler.sh"
+cat > "$HANDLER_SCRIPT" << 'EOFHANDLER'
+#!/bin/bash
+LOG_FILE="/var/log/homedock-install.log"
+HTML_FILE="/tmp/log-viewer.html"
+
+# Read request line
+read -r request_line 2>/dev/null || exit 1
+
+# Skip headers until empty line
+while IFS= read -r line 2>/dev/null && [ -n "$line" ]; do
+    : # Skip headers
+done
+
+# Parse path from request
+path=$(echo "$request_line" | awk '{print $2}' | cut -d'?' -f1)
+
+# Send HTTP response
+if [ "$path" = "/" ] || [ -z "$path" ]; then
+    printf "HTTP/1.1 200 OK\r\n"
+    printf "Content-Type: text/html; charset=utf-8\r\n"
+    printf "Connection: close\r\n"
+    printf "\r\n"
+    [ -f "$HTML_FILE" ] && cat "$HTML_FILE" || echo "<html><body><h1>HTML file not found</h1></body></html>"
+elif [ "$path" = "/logs" ]; then
+    printf "HTTP/1.1 200 OK\r\n"
+    printf "Content-Type: text/plain; charset=utf-8\r\n"
+    printf "Access-Control-Allow-Origin: *\r\n"
+    printf "Connection: close\r\n"
+    printf "\r\n"
+    [ -f "$LOG_FILE" ] && cat "$LOG_FILE" || echo "Log file not found yet..."
 else
-    echo "Error: Neither 'nc' nor 'socat' is available. Please install one of them."
+    printf "HTTP/1.1 404 Not Found\r\n"
+    printf "Content-Type: text/plain\r\n"
+    printf "Connection: close\r\n"
+    printf "\r\n"
+    echo "404 Not Found"
+fi
+EOFHANDLER
+chmod +x "$HANDLER_SCRIPT"
+
+# Try different server methods
+if command -v socat >/dev/null 2>&1; then
+    # Method 1: socat (best option - handles connections properly)
+    echo "Using socat to listen on port $PORT..." >&2
+    socat TCP-LISTEN:$PORT,reuseaddr,fork EXEC:"$HANDLER_SCRIPT" 2>&1
+elif command -v nc >/dev/null 2>&1; then
+    # Method 2: netcat with exec support
+    echo "Using netcat to listen on port $PORT..." >&2
+    # Check if netcat supports -e or -c (execute command)
+    if nc -h 2>&1 | grep -qE "\-e"; then
+        # OpenBSD netcat with -e
+        while true; do
+            nc -l -p $PORT -e "$HANDLER_SCRIPT" 2>&1 || break
+            sleep 0.1
+        done
+    elif nc -h 2>&1 | grep -qE "\-c"; then
+        # GNU netcat with -c
+        while true; do
+            nc -l -p $PORT -c "$HANDLER_SCRIPT" 2>&1 || break
+            sleep 0.1
+        done
+    else
+        # Method 3: netcat without exec - this is problematic
+        # Without -e/-c, we can't easily read request and write response on same connection
+        echo "ERROR: Netcat doesn't support -e/-c options needed for HTTP server." >&2
+        echo "Attempting to install socat (more reliable for this use case)..." >&2
+        # Try to install socat
+        if command -v apt-get >/dev/null 2>&1; then
+            while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 ||
+                fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+                sleep 1
+            done
+            apt-get update -qq >/dev/null 2>&1
+            if apt-get install -y socat >/dev/null 2>&1; then
+                echo "socat installed successfully. Restarting with socat..." >&2
+                # Restart with socat
+                socat TCP-LISTEN:$PORT,reuseaddr,fork EXEC:"$HANDLER_SCRIPT" 2>&1
+            else
+                echo "Failed to install socat. HTTP server cannot start without -e/-c support." >&2
+                exit 1
+            fi
+        else
+            echo "Cannot install socat. HTTP server requires netcat with -e/-c or socat." >&2
+            exit 1
+        fi
+    fi
+else
+    echo "ERROR: Neither 'nc' nor 'socat' is available. Cannot start HTTP server." >&2
     exit 1
 fi
 EOFSERVER
@@ -308,20 +379,24 @@ EOFSERVER
 # Make server script executable
 chmod +x /usr/local/bin/log-viewer-server.sh
 
-# Install netcat if not available (lightweight, quick install)
+# Install netcat or socat if not available (lightweight, quick install)
 # Do this early and wait for package manager if needed
 if ! command -v nc >/dev/null 2>&1 && ! command -v socat >/dev/null 2>&1; then
-    echo "Installing netcat for log viewer server..."
+    echo "Installing netcat or socat for log viewer server..."
     # Wait for package manager if needed
     while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 ||
         fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
-        echo "Waiting for package manager to install netcat..."
+        echo "Waiting for package manager to install network tools..."
         sleep 2
     done
     apt update -qq 2>&1
-    apt install -y netcat-openbsd 2>&1 || apt install -y netcat 2>&1 || {
-        echo "Warning: Failed to install netcat. Log viewer may not work."
-    }
+    # Try to install socat first (better for this use case), then netcat as fallback
+    if ! apt install -y socat 2>&1; then
+        echo "socat not available, trying netcat..." >&2
+        apt install -y netcat-openbsd 2>&1 || apt install -y netcat 2>&1 || {
+            echo "Warning: Failed to install netcat/socat. Log viewer may not work." >&2
+        }
+    fi
 fi
 
 # Verify netcat is available
@@ -338,30 +413,48 @@ else
     sleep 3
     
     # Verify server is running and listening on port 80
+    sleep 2  # Give it more time to start
     if ps -p $LOG_VIEWER_PID > /dev/null 2>&1; then
         # Check if it's actually listening
+        LISTENING=false
         if command -v ss >/dev/null 2>&1; then
             if ss -tlnp 2>/dev/null | grep -q ":$PORT "; then
-                echo "Log viewer server started successfully (PID: $LOG_VIEWER_PID) and listening on port $PORT"
-            else
-                echo "WARNING: Server process is running but may not be listening on port $PORT"
+                LISTENING=true
             fi
         elif command -v netstat >/dev/null 2>&1; then
             if netstat -tlnp 2>/dev/null | grep -q ":$PORT "; then
-                echo "Log viewer server started successfully (PID: $LOG_VIEWER_PID) and listening on port $PORT"
-            else
-                echo "WARNING: Server process is running but may not be listening on port $PORT"
+                LISTENING=true
             fi
+        fi
+        
+        if [ "$LISTENING" = "true" ]; then
+            echo "✓ Log viewer server started successfully (PID: $LOG_VIEWER_PID) and listening on port $PORT"
         else
-            echo "Log viewer server started (PID: $LOG_VIEWER_PID)"
+            echo "⚠ WARNING: Server process is running (PID: $LOG_VIEWER_PID) but may not be listening on port $PORT"
+            echo "  This might mean netcat doesn't support -e/-c options. Trying to install socat..."
+            # Try to install socat as it's more reliable
+            if ! command -v socat >/dev/null 2>&1; then
+                while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 ||
+                    fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+                    sleep 1
+                done
+                apt install -y socat >/dev/null 2>&1 && {
+                    echo "  socat installed. Restarting server..."
+                    kill $LOG_VIEWER_PID 2>/dev/null
+                    sleep 1
+                    /usr/local/bin/log-viewer-server.sh >> /var/log/log-viewer-server.log 2>&1 &
+                    LOG_VIEWER_PID=$!
+                    sleep 2
+                }
+            fi
         fi
         echo "Access installation logs at: http://$(hostname -I | awk '{print $1}')"
-        echo "Server logs available at: /var/log/log-viewer-server.log"
+        echo "Server logs: /var/log/log-viewer-server.log"
     else
-        echo "ERROR: Log viewer server failed to start. Check /var/log/log-viewer-server.log for details"
+        echo "✗ ERROR: Log viewer server failed to start. Check /var/log/log-viewer-server.log for details"
         if [ -f /var/log/log-viewer-server.log ]; then
-            echo "Last few lines of server log:"
-            tail -5 /var/log/log-viewer-server.log
+            echo "Last 10 lines of server log:"
+            tail -10 /var/log/log-viewer-server.log
         fi
     fi
 fi

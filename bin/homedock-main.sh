@@ -256,8 +256,12 @@ check_completion() {
 }
 
 # Start server
-echo "Starting log viewer server on port $PORT..."
-echo "Access at http://$(hostname -I | awk '{print $1}')"
+echo "Starting log viewer server on port $PORT..." >&2
+echo "HTML file: $HTML_FILE" >&2
+echo "Log file: $LOG_FILE" >&2
+[ -f "$HTML_FILE" ] && echo "HTML file exists" >&2 || echo "ERROR: HTML file not found!" >&2
+[ -f "$LOG_FILE" ] && echo "Log file exists" >&2 || echo "Log file not found yet (will be created)" >&2
+echo "Access at http://$(hostname -I | awk '{print $1}')" >&2
 
 # Start completion monitor in background
 (
@@ -282,9 +286,15 @@ trap cleanup INT TERM EXIT
 
 # Simple HTTP server using netcat (preferred) or socat
 if command -v nc >/dev/null 2>&1; then
-    # Use netcat in a loop - simple and reliable
+    # Use netcat in a loop - each connection is handled and then we listen again
+    # Most netcat versions bind to all interfaces (0.0.0.0) by default with -l -p
+    echo "Using netcat to listen on port $PORT..." >&2
     while true; do
-        nc -l -p $PORT -q 0 2>/dev/null | handle_request || break
+        # Listen for connection and handle it
+        # -l = listen, -p = port, -q 0 = quit after EOF (if supported)
+        nc -l -p $PORT 2>&1 | handle_request 2>&1
+        # If netcat exits, wait a moment and try again (unless we're being killed)
+        sleep 0.1
     done
 elif command -v socat >/dev/null 2>&1; then
     # Fallback to socat - create inline handler
@@ -299,17 +309,62 @@ EOFSERVER
 chmod +x /usr/local/bin/log-viewer-server.sh
 
 # Install netcat if not available (lightweight, quick install)
+# Do this early and wait for package manager if needed
 if ! command -v nc >/dev/null 2>&1 && ! command -v socat >/dev/null 2>&1; then
     echo "Installing netcat for log viewer server..."
-    apt update -qq && apt install -y netcat-openbsd >/dev/null 2>&1 || apt install -y netcat >/dev/null 2>&1 || true
+    # Wait for package manager if needed
+    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 ||
+        fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+        echo "Waiting for package manager to install netcat..."
+        sleep 2
+    done
+    apt update -qq 2>&1
+    apt install -y netcat-openbsd 2>&1 || apt install -y netcat 2>&1 || {
+        echo "Warning: Failed to install netcat. Log viewer may not work."
+    }
 fi
 
-# Start log viewer server in background
-echo "Starting log viewer server on port 80..."
-/usr/local/bin/log-viewer-server.sh >/dev/null 2>&1 &
-LOG_VIEWER_PID=$!
-echo "Log viewer server started (PID: $LOG_VIEWER_PID)"
-echo "Access installation logs at: http://$(hostname -I | awk '{print $1}')"
+# Verify netcat is available
+if ! command -v nc >/dev/null 2>&1 && ! command -v socat >/dev/null 2>&1; then
+    echo "ERROR: Neither netcat nor socat is available. Log viewer cannot start."
+else
+    # Start log viewer server in background
+    # Redirect output to a log file so we can debug
+    echo "Starting log viewer server on port 80..."
+    /usr/local/bin/log-viewer-server.sh >> /var/log/log-viewer-server.log 2>&1 &
+    LOG_VIEWER_PID=$!
+    
+    # Give server a moment to start
+    sleep 3
+    
+    # Verify server is running and listening on port 80
+    if ps -p $LOG_VIEWER_PID > /dev/null 2>&1; then
+        # Check if it's actually listening
+        if command -v ss >/dev/null 2>&1; then
+            if ss -tlnp 2>/dev/null | grep -q ":$PORT "; then
+                echo "Log viewer server started successfully (PID: $LOG_VIEWER_PID) and listening on port $PORT"
+            else
+                echo "WARNING: Server process is running but may not be listening on port $PORT"
+            fi
+        elif command -v netstat >/dev/null 2>&1; then
+            if netstat -tlnp 2>/dev/null | grep -q ":$PORT "; then
+                echo "Log viewer server started successfully (PID: $LOG_VIEWER_PID) and listening on port $PORT"
+            else
+                echo "WARNING: Server process is running but may not be listening on port $PORT"
+            fi
+        else
+            echo "Log viewer server started (PID: $LOG_VIEWER_PID)"
+        fi
+        echo "Access installation logs at: http://$(hostname -I | awk '{print $1}')"
+        echo "Server logs available at: /var/log/log-viewer-server.log"
+    else
+        echo "ERROR: Log viewer server failed to start. Check /var/log/log-viewer-server.log for details"
+        if [ -f /var/log/log-viewer-server.log ]; then
+            echo "Last few lines of server log:"
+            tail -5 /var/log/log-viewer-server.log
+        fi
+    fi
+fi
 
 # Wait for system to be ready
 sleep 30
